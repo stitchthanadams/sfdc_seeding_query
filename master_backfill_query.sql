@@ -480,4 +480,3 @@ select * from cleanest
 //where STITCH_CUSTOMER_TIER__C = 'deactivated'
 
 order by client_id
-
