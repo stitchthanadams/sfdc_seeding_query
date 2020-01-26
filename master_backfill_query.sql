@@ -3,7 +3,7 @@ clients as (
     select id as client_id, name, created_at::date as signup_date from internal_analytics.blessed_stitch_clients
 ),
 emails as (
-    select client_id, email from (
+    select client_id, email, user_created_at from (
     select *, row_number() over(partition by client_id order by user_created_at) r from internal_analytics.client_all_users
     where email not ilike '%stitchdata.com'
     ) where r = 1
@@ -71,6 +71,7 @@ clean as (
     , Stitch_Customer_Tier_Detail
     , Stitch_Customer_Term
     , signup_date
+    , user_created_at
     , case when Stitch_customer_Tier__C in ('expired', 'deactivated','pre_trial') then signup_date end as dead_account_signup_date
   from joined
 ), 
@@ -387,6 +388,7 @@ select
   first_name, 
   last_name, 
   email, 
+  z.user_created_at,
   CLIENT_CREATED_AT,
   combined_country as country, 
   cbit_industry as industry,
@@ -410,6 +412,9 @@ select
   stitch_plan_cost, 
   current_plan
   from add_current_status
+  
+  left join (select email, max(user_created_at) as user_created_at from internal_analytics.client_all_users group by 1) z
+  using(email)
   where CLIENT_CREATED_AT is not null
 ),
 
@@ -419,14 +424,15 @@ cleanest as (
     , FIRST_NAME
     , LAST_NAME
     , EMAIL
-    , CLIENT_CREATED_AT as stitch_client_creation_date
+    //, CLIENT_CREATED_AT as stitch_client_creation_date
+    , user_created_at as stitch_user_creation_date__c
     , COUNTRY
     , INDUSTRY
     , STATE
     , JOB_TITLE
     , CLIENT_ID
     , case when STITCH_CUSTOMER_TIER__C is null then 'pre_trial' else STITCH_CUSTOMER_TIER__C end as STITCH_CUSTOMER_TIER__C
-    , STITCH_CUSTOMER_TYPE
+    //, STITCH_CUSTOMER_TYPE
     , STITCH_PAYING_CUSTOMER_DATE__C
     , STITCH_FREE_TRIAL_CUSTOMER_START_DATE__C
     , INTEGRATIONS
@@ -456,7 +462,7 @@ select * from cleanest
 //where STITCH_CUSTOMER_TIER__C = 'standard'
 
 -->ALL ENTERPRISE
-where STITCH_CUSTOMER_TIER__C = 'enterprise' and stitch_plan_cost > 0
+//where STITCH_CUSTOMER_TIER__C = 'enterprise' and stitch_plan_cost > 0
 
 -->ALL FREE
 //where STITCH_CUSTOMER_TIER__C = 'free'
