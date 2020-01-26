@@ -359,6 +359,7 @@ select
   dest_types as destinations, 
   num_destinations, 
   case when stitch_customer_type = 'enterprise' then 'enterprise' else concat(stitch_customer_tier__c, ' ', stitch_customer_term, ' ', stitch_customer_tier_detail) end as stitch_customer_tier_detail, 
+  stitch_customer_tier_detail as rows_allowed,
   Stitch_Customer_Term as stitch_customer_term,
   mrr as stitch_plan_cost
 from all_data
@@ -403,7 +404,8 @@ select
   num_integrations, 
   destinations, 
   num_destinations, 
-  stitch_customer_tier_detail, 
+  //stitch_customer_tier_detail,
+  rows_allowed,
   stitch_customer_term,
   stitch_plan_cost, 
   current_plan
@@ -429,7 +431,8 @@ cleanest as (
     , STITCH_FREE_TRIAL_CUSTOMER_START_DATE__C
     , INTEGRATIONS
     , DESTINATIONS
-    , STITCH_CUSTOMER_TIER_DETAIL
+    //, STITCH_CUSTOMER_TIER_DETAIL
+    , rows_allowed as Stitch_Plan_Included_Rows_millions__c
     , case 
         when STITCH_CUSTOMER_TIER__C = 'enterprise' and stitch_customer_term is null
         then 'annual'
@@ -447,13 +450,13 @@ cleanest as (
   from final
 )
 
-select STITCH_CUSTOMER_TIER__C, count(*) as counts from cleanest
+select * from cleanest
 
 -->SELF SERVE ONLY
 //where STITCH_CUSTOMER_TIER__C = 'standard'
 
 -->ALL ENTERPRISE
-//where STITCH_CUSTOMER_TIER__C = 'enterprise' and stitch_plan_cost > 0
+where STITCH_CUSTOMER_TIER__C = 'enterprise' and stitch_plan_cost > 0
 
 -->ALL FREE
 //where STITCH_CUSTOMER_TIER__C = 'free'
@@ -467,7 +470,8 @@ select STITCH_CUSTOMER_TIER__C, count(*) as counts from cleanest
 -->ALL EXPIRED
 //where STITCH_CUSTOMER_TIER__C = 'expired'
 
---order by client_id
+-->ALL DEACTIVATED
+//where STITCH_CUSTOMER_TIER__C = 'deactivated'
 
-group by 1 order by 2 desc
+order by client_id
 
